@@ -2,6 +2,7 @@ import os
 from collections import namedtuple
 from datetime import datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from aiohttp import web
 
@@ -61,7 +62,7 @@ IMAGE_MAP = {
 
 
 def get_filename(name: str):
-    now = datetime.now()
+    now = datetime.now(tz=ZoneInfo("Europe/Moscow"))
     now_minutes = time24(hour=now.hour, minute=now.minute)
     for option in IMAGE_MAP.get(name, []):
         if now_minutes in option.interval:
