@@ -5,7 +5,7 @@ from pathlib import Path
 
 from aiohttp import web
 
-BASE_DIR = Path(os.environ.get('BASE_DIR', r'../data'))
+BASE_DIR = Path(os.environ.get('BASE_DIR', r'./data'))
 HOST = os.environ.get('HOST', 'localhost')
 PORT = int(os.environ.get('PORT', 8000))
 
