@@ -5,33 +5,66 @@ from pathlib import Path
 
 from aiohttp import web
 
-
-def Time(hour: int, minute: int):
-    return hour * 60 + minute
-
-
-Interval = namedtuple('Interval', ['start', 'end'])
-Option = namedtuple('Option', ['interval', 'filename'])
-
-BASE_DIR = Path(os.environ.get('BASE_DIR', r'./data'))
+BASE_DIR = Path(os.environ.get('BASE_DIR', r'../data'))
 HOST = os.environ.get('HOST', 'localhost')
 PORT = int(os.environ.get('PORT', 8000))
 
+
+def time24(hour: int, minute: int):
+    if 0 <= hour < 24 and 0 <= minute < 60:
+        return hour * 60 + minute
+    raise TypeError
+
+
+class HalfInterval:
+    def __init__(self, start: int, end: int):
+        self.start = start
+        self.end = end
+
+    def __contains__(self, time: int):
+        if self.start < self.end:
+            return self.start <= time < self.end
+        else:
+            full = 24 * 60
+            return self.start <= time < self.end + full or self.start - full <= time < self.end
+
+
+Option = namedtuple('Option', ['interval', 'filename'])
+
+INTERVALS = {
+    'morning': HalfInterval(start=time24(hour=4, minute=0), end=time24(hour=10, minute=0)),
+    'afternoon': HalfInterval(start=time24(hour=10, minute=0), end=time24(hour=16, minute=0)),
+    'evening': HalfInterval(start=time24(hour=16, minute=0), end=time24(hour=22, minute=0)),
+    'night': HalfInterval(start=time24(hour=22, minute=0), end=time24(hour=4, minute=0)),
+}
+
 IMAGE_MAP = {
     'cityscape1': [
-        Option(Interval(start=Time(hour=0, minute=0), end=Time(hour=5, minute=59)), BASE_DIR / 'cityscape1' / 'night.jpeg'),
-        Option(Interval(start=Time(hour=6, minute=0), end=Time(hour=11, minute=59)), BASE_DIR / 'cityscape1' / 'morning.jpeg'),
-        Option(Interval(start=Time(hour=12, minute=0), end=Time(hour=17, minute=59)), BASE_DIR / 'cityscape1' / 'afternoon.png'),
-        Option(Interval(start=Time(hour=18, minute=0), end=Time(hour=23, minute=59)), BASE_DIR / 'cityscape1' / 'evening.png'),
+        Option(INTERVALS['night'], BASE_DIR / 'cityscape1' / 'night.jpeg'),
+        Option(INTERVALS['morning'], BASE_DIR / 'cityscape1' / 'morning.jpeg'),
+        Option(INTERVALS['afternoon'], BASE_DIR / 'cityscape1' / 'afternoon.png'),
+        Option(INTERVALS['evening'], BASE_DIR / 'cityscape1' / 'evening.png'),
+    ],
+    'cityscape2': [
+        Option(INTERVALS['night'], BASE_DIR / 'cityscape2' / 'night.jpg'),
+        Option(INTERVALS['morning'], BASE_DIR / 'cityscape2' / 'morning.jpg'),
+        Option(INTERVALS['afternoon'], BASE_DIR / 'cityscape2' / 'afternoon.jpg'),
+        Option(INTERVALS['evening'], BASE_DIR / 'cityscape2' / 'evening.jpg'),
+    ],
+    'bg': [
+        Option(INTERVALS['night'], BASE_DIR / 'bg' / 'night.png'),
+        Option(INTERVALS['morning'], BASE_DIR / 'bg' / 'morning.jpg'),
+        Option(INTERVALS['afternoon'], BASE_DIR / 'bg' / 'afternoon.png'),
+        Option(INTERVALS['evening'], BASE_DIR / 'bg' / 'evening.png'),
     ],
 }
 
 
 def get_filename(name: str):
     now = datetime.now()
-    now_minutes = now.hour * 60 + now.minute
+    now_minutes = time24(hour=now.hour, minute=now.minute)
     for option in IMAGE_MAP.get(name, []):
-        if option.interval.start <= now_minutes <= option.interval.end:
+        if now_minutes in option.interval:
             return option.filename
 
 
@@ -43,7 +76,8 @@ class Server:
     def run(self, host: str, port: int):
         web.run_app(self.app, host=host, port=port)
 
-    def response_error(self, exception: Exception, status=500):
+    @staticmethod
+    def response_error(exception: Exception, status=500):
         return web.json_response({
             'type': "Internal Server Error",
             'error': f'{exception.__class__.__name__}: {exception}',
