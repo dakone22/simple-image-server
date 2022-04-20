@@ -1,1 +1,1 @@
-# BMSTU.Map.Server
+# simple-image-server

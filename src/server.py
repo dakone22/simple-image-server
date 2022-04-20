@@ -65,6 +65,7 @@ def get_filename(name: str):
     now_minutes = time24(hour=now.hour, minute=now.minute)
     for option in IMAGE_MAP.get(name, []):
         if now_minutes in option.interval:
+            print(now, option.filename)
             return option.filename
 
 
