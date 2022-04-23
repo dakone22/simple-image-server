@@ -1,14 +1,37 @@
+import logging
 import os
 from collections import namedtuple
 from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
+import ssl
 
 from aiohttp import web
+
 
 BASE_DIR = Path(os.environ.get('BASE_DIR', r'./data'))
 HOST = os.environ.get('HOST', 'localhost')
 PORT = int(os.environ.get('PORT', 8000))
+TIMEZONE = ZoneInfo(os.environ.get('TIMEZONE', "Europe/Moscow"))
+SSL_CONTEXT = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+SSL_CONTEXT.load_cert_chain(os.environ.get('FULLCHAIN', '~/fullchain.pem'),
+                            os.environ.get('PRIVKEY', '~/privkey.pem'))
+
+
+def get_module_logger(mod_name):
+    """
+    To use this, do logger = get_module_logger(__name__)
+    """
+    logger = logging.getLogger(mod_name)
+    handler = logging.StreamHandler()
+    formatter = logging.Formatter('%(asctime)s [%(name)-12s] %(levelname)-8s %(message)s')
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+    logger.setLevel(logging.DEBUG)
+    return logger
+
+
+logger = get_module_logger(__name__)
 
 
 def time24(hour: int, minute: int):
@@ -46,13 +69,13 @@ IMAGE_MAP = {
         Option(INTERVALS['afternoon'], BASE_DIR / 'cityscape1' / 'afternoon.png'),
         Option(INTERVALS['evening'], BASE_DIR / 'cityscape1' / 'evening.png'),
     ],
-    'cityscape2.png': [
+    'cityscape2.jpeg': [
         Option(INTERVALS['night'], BASE_DIR / 'cityscape2' / 'night.jpg'),
         Option(INTERVALS['morning'], BASE_DIR / 'cityscape2' / 'morning.jpg'),
         Option(INTERVALS['afternoon'], BASE_DIR / 'cityscape2' / 'afternoon.jpg'),
         Option(INTERVALS['evening'], BASE_DIR / 'cityscape2' / 'evening.jpg'),
     ],
-    'bg.png': [
+    'bg': [
         Option(INTERVALS['night'], BASE_DIR / 'bg' / 'night.png'),
         Option(INTERVALS['morning'], BASE_DIR / 'bg' / 'morning.jpg'),
         Option(INTERVALS['afternoon'], BASE_DIR / 'bg' / 'afternoon.png'),
@@ -62,11 +85,10 @@ IMAGE_MAP = {
 
 
 def get_filename(name: str):
-    now = datetime.now(tz=ZoneInfo("Europe/Moscow"))
+    now = datetime.now(tz=TIMEZONE)
     now_minutes = time24(hour=now.hour, minute=now.minute)
     for option in IMAGE_MAP.get(name, []):
         if now_minutes in option.interval:
-            print(now, option.filename)
             return option.filename
 
 
@@ -76,7 +98,7 @@ class Server:
         self.app.router.add_get('/notion/dynamic_images/{name}', self.notion_images_handler)
 
     def run(self, host: str, port: int):
-        web.run_app(self.app, host=host, port=port)
+        web.run_app(self.app, host=host, port=port, ssl_context=SSL_CONTEXT)
 
     @staticmethod
     def response_error(exception: Exception, status=500):
@@ -86,6 +108,7 @@ class Server:
         }, status=status)
 
     async def notion_images_handler(self, request: web.Request):
+        logger.info(request)
         filename = get_filename(request.match_info.get('name', None))
 
         if not filename:
