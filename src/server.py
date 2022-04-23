@@ -40,19 +40,19 @@ INTERVALS = {
 }
 
 IMAGE_MAP = {
-    'cityscape1': [
+    'cityscape1.png': [
         Option(INTERVALS['night'], BASE_DIR / 'cityscape1' / 'night.jpeg'),
         Option(INTERVALS['morning'], BASE_DIR / 'cityscape1' / 'morning.jpeg'),
         Option(INTERVALS['afternoon'], BASE_DIR / 'cityscape1' / 'afternoon.png'),
         Option(INTERVALS['evening'], BASE_DIR / 'cityscape1' / 'evening.png'),
     ],
-    'cityscape2': [
+    'cityscape2.png': [
         Option(INTERVALS['night'], BASE_DIR / 'cityscape2' / 'night.jpg'),
         Option(INTERVALS['morning'], BASE_DIR / 'cityscape2' / 'morning.jpg'),
         Option(INTERVALS['afternoon'], BASE_DIR / 'cityscape2' / 'afternoon.jpg'),
         Option(INTERVALS['evening'], BASE_DIR / 'cityscape2' / 'evening.jpg'),
     ],
-    'bg': [
+    'bg.png': [
         Option(INTERVALS['night'], BASE_DIR / 'bg' / 'night.png'),
         Option(INTERVALS['morning'], BASE_DIR / 'bg' / 'morning.jpg'),
         Option(INTERVALS['afternoon'], BASE_DIR / 'bg' / 'afternoon.png'),
